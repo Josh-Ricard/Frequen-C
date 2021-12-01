@@ -24,8 +24,10 @@ jobs:
     needs: build
     if: ${{ github.event_name == 'push' }}
     steps:
+      - name: Bundle AAB
+        run: ./gradlew bundleRelease
       - uses: r0adkll/sign-android-release@v1
-        name: Build AAB
+        name: Sign AAB
         id: sign_aab
         with:
           releaseDirectory: app/build/outputs/bundle/release
