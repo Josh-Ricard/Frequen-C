@@ -24,6 +24,13 @@ jobs:
     needs: build
     if: ${{ github.event_name == 'push' }}
     steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+      - uses: gradle/wrapper-validation-action@v1
       - name: Bundle AAB
         run: ./gradlew bundleRelease
       - uses: r0adkll/sign-android-release@v1
