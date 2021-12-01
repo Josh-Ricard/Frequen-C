@@ -1,0 +1,39 @@
+name: CI/CD
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+      - uses: gradle/wrapper-validation-action@v1
+      - name: Build with Gradle
+        run: ./gradlew build
+  package:
+    runs-on: ubuntu-latest
+    needs: build
+    if: ${{ github.event_name == 'push' }}
+    steps:
+      - uses: r0adkll/sign-android-release@v1
+        name: Build AAB
+        id: sign_aab
+        with:
+          releaseDirectory: app/build/outputs/bundle/release
+          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+          alias: ${{ secrets.ALIAS }}
+          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Signed App Bundle
+          path: ${{ steps.sign_aab.outputs.signedReleaseFile }}
