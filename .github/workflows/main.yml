@@ -7,7 +7,7 @@ on:
     branches:
       - main
 jobs:
-  build:
+  build_and_release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -19,22 +19,12 @@ jobs:
       - uses: gradle/wrapper-validation-action@v1
       - name: Build with Gradle
         run: ./gradlew build
-  package:
-    runs-on: ubuntu-latest
-    needs: build
-    if: ${{ github.event_name == 'push' }}
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up JDK
-        uses: actions/setup-java@v2
-        with:
-          java-version: '11'
-          distribution: 'adopt'
-      - uses: gradle/wrapper-validation-action@v1
       - name: Bundle AAB
+        if: ${{ github.event_name == 'push' }}
         run: ./gradlew bundleRelease
       - uses: r0adkll/sign-android-release@v1
         name: Sign AAB
+        if: ${{ github.event_name == 'push' }}
         id: sign_aab
         with:
           releaseDirectory: app/build/outputs/bundle/release
@@ -43,16 +33,18 @@ jobs:
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
       - uses: actions/upload-artifact@v2
+        if: ${{ github.event_name == 'push' }}
         with:
           name: Signed App Bundle
           path: ${{ steps.sign_aab.outputs.signedReleaseFile }}
       - uses: r0adkll/upload-google-play@v1
+        if: ${{ github.event_name == 'push' }}
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: com.frequenc
           releaseFile: ${{ steps.sign_aab.outputs.signedReleaseFile }}
           track: production
           inAppUpdatePriority: 5
-          userFraction: 1.0
+          userFraction: 0.999
           status: completed
           whatsNewDirectory: whatsnew
